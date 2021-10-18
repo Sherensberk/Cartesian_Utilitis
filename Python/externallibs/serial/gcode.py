@@ -3,16 +3,16 @@ class gcode():
     def __init__(self, serial):
         self.serial = serial
 
-    def M114(self,where=[("X:", " Y:"), ("Y:", " Z:"), ("Z:", " E:"), ("E:", " Count")]):
+    def M114(self, type='', where=[("X:", " Y:"), ("Y:", " Z:"), ("Z:", " A:"), ("A:", " Count")]):
         if self.serial.isAlive():
             for _ in range(2):
-                Echo = (self.serial.send("M114", echo=True))[0]
+                Echo = (self.serial.send(f"M114 {type}", echo=True))[0]
             try:
                 Pos = []
                 for get in where:
                     left, right = get[0], get[1]
                     Pos.append(float(Echo[Echo.index(left)+len(left):Echo.index(right)]))
-                return dict(zip(['X', 'Y', 'Z', 'E'], Pos))
+                return dict(zip(['X', 'Y', 'Z', 'A'], Pos))
             except ValueError:
                 print("Recebi:", Echo)
                 return Echo
@@ -61,3 +61,28 @@ class gcode():
                     break
                 except KeyError:
                     pass
+
+                                            
+    def M_G0(self, *args, **kargs):
+        cords = ""
+        for pos in args:
+            axis = pos[0].upper()
+            pp = pos[1]
+            cords+=f"{axis}{pp} "
+        self.serial.send(f"G0 {cords}")
+        if kargs.get("nonSync"):
+            return
+        futuro = self.M114()
+        real = self.M114('R')
+        #while True:
+        a = [v for v in futuro.values()]
+        b = [v for v in real.values()]
+        while not all((a[i] - 0.5 <= b[i] <= a[i] + 0.5) == True for i in range(len(b))):
+            real = self.M114('R')
+            b = [v for v in real.values()]
+            #print(a, b)
+            
+        real = self.M114('R')
+        #print(real, futuro)
+        pass
+
