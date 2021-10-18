@@ -122,3 +122,6 @@ class new_connection(object):
         else:
             return False
         #     return ["Comando não enviado, falha na conexão com a serial."]
+
+# if __name__ == '__main__':
+#     ardu = new_connection("nome", "com4", 9600)
