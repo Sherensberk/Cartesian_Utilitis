@@ -60,7 +60,7 @@
                 return false;
             });
             $('form#broadcast').submit(function(event) {
-                socket.emit('pauseRequest', {time: 2});
+                socket.emit('trigger_this', {command:"image" , data:$('#broadcast_data').val()});
                 return false;
             });
             $('form#join').submit(function(event) {

@@ -70,12 +70,24 @@ class new_camera(Thread):
         self.close()
     
     def stream(self):
-        while True:
+        while self.isRunning():
             frame = self.getFrame()
             yield (b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n'
                        + cv2.imencode('.JPEG', frame,
                                       [cv2.IMWRITE_JPEG_QUALITY, 100])[1].tobytes()
                        + b'\r\n')
+
+
+class Identify(object):
+    def __init__(self, cameraThread, function, config):
+        self.function = function
+        self.config = config
+        self.cam = cameraThread
+
+    def identify(self):
+        return self.function(self.cam.getFrame(), self.config)
+
+    
 
 if __name__ == '__main__':
     cam = new_camera(config={"prefix":"CAP_PROP_", "suffix":"", "properties":{}})
