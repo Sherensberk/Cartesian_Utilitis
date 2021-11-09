@@ -2,13 +2,14 @@ from threading import Thread, Event
 import time
 import cv2
 import numpy as np
+import os
 class new_camera(Thread):
-    def __init__(self,config):
+    def __init__(self,config, **kargs):
         Thread.__init__(self)
         self.config = config
         self.name = self.config["name"]
         self.id = self.config["usbid"]
-        self.frame = self.backGround()
+        self.frame = self.backGround() if isinstance(kargs.get("background"), type(None))  else kargs.get("background")
         self.cam = cv2.VideoCapture(self.id)
         self._stop_event = Event()
         self.runnig = Event()
@@ -30,8 +31,8 @@ class new_camera(Thread):
     
     def awaitStart(self, timeout):
         t0 = time.monotonic() + timeout
-        print(self.isRunning())
-        while time.monotonic() < t0 and not self.isRunning():
+        # print(self.isRunning())
+        while time.monotonic() < t0:
             pass
         return None
 

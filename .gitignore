@@ -2,3 +2,6 @@
 .vscode/*
 Python/teste.py
 Python/Json/*
+*.pyc
+*.pyc
+*.pyc

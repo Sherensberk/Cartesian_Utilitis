@@ -1,3 +1,5 @@
+import logging.config
+from ..util.customException import *
 
 class gcode():
     def __init__(self, serial):
@@ -14,8 +16,7 @@ class gcode():
                     Pos.append(float(Echo[Echo.index(left)+len(left):Echo.index(right)]))
                 return dict(zip(['X', 'Y', 'Z', 'A'], Pos))
             except ValueError:
-                print("Recebi:", Echo)
-                return Echo
+                raise M114unpackFail(self.serial.name, Echo)
 
 
     def M119(self, cut=": "):
@@ -86,3 +87,7 @@ class gcode():
         #print(real, futuro)
         pass
 
+    def callPin(self, name, state, json):
+        value = json[name]["command"]+(json[name]["values"].replace("_pin_", str(json[name]["pin"]))).replace("_state_", str(json[name][state]))
+        print(value)
+        self.serial.send(value)

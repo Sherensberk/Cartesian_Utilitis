@@ -14,100 +14,32 @@ from engineio.payload import Payload
 import json
 Payload.max_decode_packets = 500
 
-# from time import sleep
-# class process(Thread):
-#     def __init__(self, *args, **kargs):
-#             Thread.__init__(self)
-
-#     def run():
-#         print("run")
-
-# def FuncA():
-#     for _ in range(10):
-#         print('A')
-#         sleep(1)
-
-# def FuncB():
-#     for _ in range(5):
-#         print('B')
-
-# def FuncN(**kargs):
-#     for _ in range(kargs.get("range")):
-#         print(kargs.get("char"))
-#         sleep(kargs.get("time"))
-
-
-
-# # t1 = taskProcess(treadMount(args=('a','b',), kargs={"1":0, "2":1, "model":"k"}))
-
-# """
-# Recebi nome da função quero executar...
-
-#     t = tread (func, args)
-#     parar {
-#             if not func.stop()?
-#                 run...
-#                 para sozinha, como não esta em um loop permanente, não precisa de um stop esterno
-
-#         como requistar stop externo?
-#     }
-
-# """
-# Processo = {
-# }
-
-# def updateProcesso(Nome, status, valor, **kargs):
-#     global Processo
-#     print(kargs.get("op"), Nome, status, valor)
-#     if kargs.get("op") == "edit":
-#         Processo[Nome][status] = valor
-#     if kargs.get("op") == 'remove':
-#         Processo.remove(Nome)
-#     if kargs.get("op") == "add":
-#         Processo[Nome] = {"st": False, "rn":False, "stp":False, "fn":False}
-#     for p in Processo:
-#         print(p, Processo[p])
-# lk = Lock()
-
-# import string
-# from random import choice
-# def randomString(tamanho=20, pattern=''):
-#     valores = string.ascii_letters + string.digits
-#     word = ''
-#     for i in range(tamanho):
-#         word += choice(valores)
-#     return pattern+word
-
-# def taskInput(lock, nome, status, valor, processo):
-#     for _ in range(500):
-#         lock.acquire()
-#         updateProcesso(nome, status,valor, op=processo)
-#         lock.release()
-
-# nomes = [randomString(5) for _ in range(5)]
-# for n in nomes:
-#     updateProcesso(n, '','',op='add')
-# t1 = Thread(target=taskInput, args=(lk, choice(nomes), choice(("st", "rn", "stp", "fn")), choice((False, True, True, True, True)), "edit"))
-# t2 = Thread(target=taskInput, args=(lk, choice(nomes), choice(("st", "rn", "stp", "fn")), choice((False, True, True)), "edit"))
-# t1.start()
-# t2.start()
-# t1.join()
-# t2.join()
-# exit()
-# """
-
-# Recebe nome da função que deve acionar,
-#     Inicia função função atraves de uma nova thread.
-#     Uma segnda thread, monitora os eventos dessa nova, e ajusta o objeto de status deacordo com isso, (background task?).
-
-#     Thread(função, parametros.)
-
-#     ThreadMonitor(monitora, listaStatus)
-
-# """
-
 class Server(object):
     def __init__(self, app_ip, app_port, report_time, **kargs):
+        """
+            ### Parameters
+            @app_ip :\n
+                - type -> (str)\n
+                - ip from socketio connection\n
+                    'localhost' or '127.0.0.1' also work.
+
+            @app_port :\n
+                - type -> (int)\n
+                - port from socketio connection (0000:9999)\n
+
+            @report_time : int
+            - After 'n' seconds, server run a background Thread.\n
+                Backgorund Thread: report all avaliable threads, and if they are running or not. 
+
+            Raises
+            ------
+            - ServerCrash
+                - [description]
+            - ServerLosingConection
+                - [description]
+            - ServerStopResponse
+                - [description]
+        """
         #Thread.__init__(self)
         # self.app = Flask(__name__, static_folder = f"{buildfolder}/static",
         #                         template_folder = buildfolder)
@@ -124,9 +56,9 @@ class Server(object):
         self.functions = kargs.get("functions")
         self.cameras = {}
         self.process = {}
-
-    def start(self):
         self.defineRoutes()
+    def start(self):
+        
         print("rodando....")
         self.socketio.run(self.app, host=self.ip, port=self.port)
         print("parou!")
@@ -162,9 +94,9 @@ class Server(object):
                 update = {}
                 for k, v in self.process.items():
                     update[k] = {"alive": v.is_alive()}
-                socketio.sleep(self.report_time)
                 socketio.emit('my_response',
                             {'data': json.dumps(update, indent=2, ensure_ascii=False)})
+                socketio.sleep(self.report_time)
 
 
         @app.route('/')
@@ -189,13 +121,20 @@ class Server(object):
         @socketio.event
         def trigger_this(message):
             print(message)
-            function = self.functions[message["command"]]
-            thread = Thread(target=function, args=(), kwargs={})
-            self.process[message["command"]] = thread
-            thread.start()
-            
-            emit('my_response',
-                {'data': "ok", 'count': session['receive_count']})
+            try:
+                function = self.functions[message["command"]]
+                thread = Thread(target=function, args=(), kwargs={})
+                self.process[message["command"]] = thread
+                thread.start()
+                
+                emit('my_response',
+                    {'data': "ok", 'count': session['receive_count']})
+            except TypeError:
+                emit('my_response',
+                    {'data': "Nenhuma função foi definida...", 'count': session['receive_count']})
+            except KeyError:
+                emit('my_response',
+                    {'data': f"A função [{message['command']}] não está acessivel", 'count': session['receive_count']})
 
 
         @socketio.event
