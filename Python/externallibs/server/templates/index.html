@@ -60,15 +60,15 @@
                 return false;
             });
             $('form#broadcast').submit(function(event) {
-                socket.emit('trigger_this', {command:"startProcess" , data:$('#broadcast_data').val()});
+                socket.emit('trigger_this', {command:"start_process" , data:$('#broadcast_data').val()});
                 return false;
             });
             $('form#join').submit(function(event) {
-                socket.emit('join', {room: $('#join_room').val()});
+                socket.emit('trigger_this', {command:"stop_process" , data:$('#broadcast_data').val()});
                 return false;
             });
             $('form#leave').submit(function(event) {
-                socket.emit('leave', {room: $('#leave_room').val()});
+                socket.emit('trigger_this', {command:"reset_process" , data:$('#broadcast_data').val()});
                 return false;
             });
             $('form#send_room').submit(function(event) {
@@ -100,15 +100,15 @@
     </form>
     <form id="broadcast" method="POST" action='#'>
         <input type="text" name="broadcast_data" id="broadcast_data" placeholder="Message">
-        <input type="submit" value="Broadcast">
+        <input type="submit" value="start">
     </form>
     <form id="join" method="POST" action='#'>
         <input type="text" name="join_room" id="join_room" placeholder="Room Name">
-        <input type="submit" value="Join Room">
+        <input type="submit" value="stop">
     </form>
     <form id="leave" method="POST" action='#'>
         <input type="text" name="leave_room" id="leave_room" placeholder="Room Name">
-        <input type="submit" value="Leave Room">
+        <input type="submit" value="reset">
     </form>
     <form id="send_room" method="POST" action='#'>
         <input type="text" name="room_name" id="room_name" placeholder="Room Name">

@@ -3,9 +3,11 @@ import externallibs.new_serial.movment as move
 import timeit
 
 class loop():
-    def __init__(self, _loop_type, break_function=None, **kwargs) -> None:
+    def __init__(self, _loop_type, **kwargs) -> None:
         self.type = _loop_type
-        self.break_function = break_function
+        self.kwargs = kwargs
+        self.break_function = self.kwargs.get("break_function")
+        self.range = kwargs.get("range")
         self.start = getattr(self, f"_{self.type}")
         self.counter = 0
         self.outPut_function = 0 
@@ -17,9 +19,9 @@ class loop():
             self.counter+=1
         return self.counter, self.outPut_function
 
-    def _for(self, function, _range, *args, **kwargs):
+    def _for(self, function, *args, **kwargs):
         self.counter = 0
-        for _c_ in range(_range):
+        for _c_ in self.range:
             self.outPut_function = function(*args, **kwargs)
             self.counter = _c_
         return self.counter, self.outPut_function
