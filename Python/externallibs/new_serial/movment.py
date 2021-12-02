@@ -2,7 +2,7 @@ from ..util.customException import axisundefined
 
 convert = lambda _array, _convert: tuple(_array) if _convert else _array
 
-def setPositon(vector, movefunc,**kargs):
+def setPositon(vector, **kargs):
     
     # Cria vetor de movimentos com o maior tamanho nescessário.
     
@@ -20,7 +20,9 @@ def setPositon(vector, movefunc,**kargs):
     # print(ordem)
     # Executa a função de movimentação passando as posições como *args, define se 'nonsync'
     # é True ou False/None com base no tipo da variavel da posição (lista ou tupla)
-    [list(map(lambda a: movefunc("sending: ", *a, nonsync=None if isinstance(l[0], tuple) else True), [l])) for l in ordem]
+    if kargs.get('function'):
+        [list(map(lambda a: kargs.get('function')("sending: ", *a, nonsync=None if isinstance(l[0], tuple) else True), [l])) for l in ordem]
+    return ordem
 
 def showMoves(name, *args, **kwargs):
     # print(f"{name}")
@@ -29,6 +31,7 @@ def showMoves(name, *args, **kwargs):
         #print( "await...")
         #time.sleep(2)
     for k in args:
+        print(k)
         pass
         #print(k)
 

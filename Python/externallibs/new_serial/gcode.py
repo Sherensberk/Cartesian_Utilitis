@@ -4,6 +4,12 @@ from ..util.customException import *
 class gcode():
     def __init__(self, serial):
         self.serial = serial
+        self.lock = False
+        self.lock_permission = ["stop", "kill", "quick_stop", "resume"]
+
+    def send(self, GCODE, *args, **kwargs):
+        if (self.lock and GCODE in self.lock_permission) or not self.lock:
+            getattr(self, GCODE)(*args, **kwargs)
 
     def M114(self, type='', where=[("X:", " Y:"), ("Y:", " Z:"), ("Z:", " A:"), ("A:", " Count")]):
         if self.serial.isAlive():
@@ -86,6 +92,39 @@ class gcode():
         real = self.M114('R')
         #print(real, futuro)
         pass
+    
+    def stop(self):
+        """
+        The M0 command pause after the last movement and wait for the user to continue.
+        """
+        self.serial.send("M0")
+        self.lock = True
+    
+    def kill(self):
+        """
+        Used for emergency stopping,
+        M112 shuts down the machine, turns off all the steppers and heaters
+        and if possible, turns off the power supply.
+        A reset is required to return to operational mode.
+        """
+        self.serial.send("M112")
+        self.lock = True
+
+    def quick_stop(self):
+        """
+        Stop all steppers instantly.
+        Since there will be no deceleration,
+        steppers are expected to be out of position after this command.
+        """
+        self.serial.send("M410")
+        self.lock = True
+
+    def resume(self):
+        """
+        Resume machine from pause (M0) using M108 command.
+        """
+        self.serial.send("M108")
+        self.lock = False
 
     def callPin(self, name, state, json):
         value = json[name]["command"]+(json[name]["values"].replace("_pin_", str(json[name]["pin"]))).replace("_state_", str(json[name][state]))

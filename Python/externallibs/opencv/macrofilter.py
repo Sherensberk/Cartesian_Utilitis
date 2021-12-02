@@ -13,6 +13,26 @@ class objeto():
         self.center = center
         self.id = id
 
+class Manipulator():
+    def __init__(self, gcode_encoder):
+        self.gcode = gcode_encoder
+
+    def catch(self):
+        pass
+
+    def latch(self):
+        pass
+
+    def move(self, *args, **kwargs):
+        self.gcode.M_G0(*args, *kwargs)
+        pass
+
+    def reset(self):
+        pass
+
+    def feedrate(self):
+        pass
+
 class Filter():
     def __init__(self, name, colorRange, areaRange, kernel_A, kernel_B, mode, method):
         self.name = name
@@ -280,21 +300,30 @@ class AreaProcessing():
         self.identifier = identificador
         self.data = []
         self.stopped = False
+        self.kw = kwargs
+        self.blur = self.kw.get('blur')
     def process(self, **kwargs) -> dict:
         self.data = []
-        self.world = self.cam.getFrame()
+        self.world = cv2.blur(self.cam.getFrame(), self.blur) if self.blur else self.cam.getFrame()
         self.world2draw = self.world.copy()
-        for areas_info in zip(self.areaCutter("color_coordinate", self.world),
-                            self.areaCutter("obj_coordinate", self.world)):
-            
-            cuts_info, color_info = areas_info[1], areas_info[0]
-            img_color, dots_color = color_info[1], color_info[0]
-            img, dots = cuts_info[1], cuts_info[0]
 
-            if kwargs.get('autoColor'):
-                min, max = self.defineColor(img_color)
-                self.identifier.config.colorRange.lower = cor(min, 'cv2_hsv')
-                self.identifier.config.colorRange.upper = cor(max, 'cv2_hsv')
+        if kwargs.get('autoColor'):
+            for color_area in self.areaCutter("color_coordinate", self.world):
+                img_color, dots_color = color_area[1], color_area[0]
+                _min, _max = self.defineColor(img_color)
+                self.identifier.config.colorRange.lower = cor(_min, 'cv2_hsv')
+                self.identifier.config.colorRange.upper = cor(_max, 'cv2_hsv')
+
+        for areas_info in self.areaCutter("obj_coordinate", self.world):
+            
+            img, dots = areas_info[1], areas_info[0]
+            # img_color, dots_color = color_info[1], color_info[0]
+            # img, dots = cuts_info[1], cuts_info[0]
+
+            # if kwargs.get('autoColor'):
+            #     min, max = self.defineColor(img_color)
+            #     self.identifier.config.colorRange.lower = cor(min, 'cv2_hsv')
+            #     self.identifier.config.colorRange.upper = cor(max, 'cv2_hsv')
             
             self.identifier.updateImg(img)
             objects = self.identifier.identify()
@@ -305,7 +334,21 @@ class AreaProcessing():
         return self.data
 
     def drawData(self, cut, insert_points, color_base_points, obj_list):
-        img = cv2.bitwise_or(cut, cut, None, self.identifier.mask)
+        rgb_base =(150,70,70)
+        rgb_base_img = np.zeros([cut.shape[0], cut.shape[1], 3], np.uint8)
+        for c in range(0,3):
+            rgb_base_img[:, :, c] = np.zeros([cut.shape[0], cut.shape[1]]) + rgb_base[c]
+        
+        
+        imgg= cv2.bitwise_or(cut, cut, None, self.identifier.mask)
+        bkg = cv2.bitwise_or(rgb_base_img, rgb_base_img, None, cv2.cv2.bitwise_not(self.identifier.mask))
+
+        img = cv2.bitwise_or(imgg, bkg)
+        cv2.imshow('gg',imgg)
+        cv2.imshow('bk',bkg)
+        cv2.imshow('img_or',img)
+ 
+        cv2.waitKey(1)
         for objeto in obj_list:
 
             for k, v in objeto.rects.items():
@@ -341,12 +384,13 @@ class AreaProcessing():
                 ]for index, square_dots in enumerate(self.config[what]["squares"])
             ]
         for dots_group in a:
-            cuts.append((
-                dots_group,
-                image[
-                    dots_group[0][1]:dots_group[1][1],
-                    dots_group[0][0]:dots_group[1][0]
-                ]
+            cuts.append(
+                (
+                    dots_group,
+                    image[
+                        dots_group[0][1]:dots_group[1][1],
+                        dots_group[0][0]:dots_group[1][0]
+                    ]
                 )
             )
         return cuts
@@ -354,7 +398,7 @@ class AreaProcessing():
     def defineColor(self, img_color):
          # procura na amostra de cor, a cor dominante
         rgb_base = self.rgbDominantColor(img_color)
-        #cv2.imshow(f"{rgb_base}",img_color)
+        
         # cria uma imagem de amostra que contenha somente a cor dominante
         rgb_base_img = np.zeros([200, 200, 3], np.uint8)
         for c in range(0,3):
@@ -365,17 +409,14 @@ class AreaProcessing():
 
         #acha os valores correspondentes em hsv tirando uma média de toda a imagem (como é feita de uma cor só, a média é a conversão direta)
         hsv_bkg_median = np.mean(np.array(hsv_bkg), axis=(1,0)).tolist()
-        #cv2.imshow(f"{hsv_bkg_median}",rgb_base_img)
+        
         # cria um range minimo  máximo usando a média - n% ('n%' é definido pelo objeto)
         hsv_bkg_median_max = list(map(lambda x: x+(x*self.config["accuracy_range"]), hsv_bkg_median))
         hsv_bkg_median_min = list(map(lambda x: x-(x*self.config["accuracy_range"]), hsv_bkg_median))
 
-        #cv2.waitKey(1)
+
         return hsv_bkg_median_min, hsv_bkg_median_max
-        # Substitui no arquivo de configuração atual, o novo valor...
-        # self.config["Color"][self.config["Color"]["mode"]]["lower"] = hsv_bkg_median_min
-        # self.config["Color"][self.config["Color"]["mode"]]["upper"] = hsv_bkg_median_max
-        # return rgb_base_img  
+  
     def rgbDominantColor(self, a):
         a2D = a.reshape(-1,a.shape[-1])
         col_range = (256, 256, 256) # generically : a2D.max(0)+1

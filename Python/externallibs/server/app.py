@@ -54,7 +54,7 @@ class Server(object):
         self.app.config['SECRET_KEY'] = 'secret!'
         self.socketio = SocketIO(self.app, async_mode=None, async_handlers=True)
         self.functions = kargs.get("functions")
-        self.cameras = {}
+        self.cameras = kargs.get("cameras")
         self.process = {}
         self.defineRoutes()
     def start(self):
